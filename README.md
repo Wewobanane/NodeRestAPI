@@ -27,67 +27,14 @@ A comprehensive authentication REST API built with Node.js, Express, PostgreSQL,
 - **File Upload:** Multer + Cloudinary
 - **Validation:** express-validator
 
-## Prerequisites
-
-- Node.js (v14 or higher)
-- PostgreSQL (v12 or higher)
-- Gmail account (for email service)
-- Google OAuth credentials (optional)
-- GitHub OAuth credentials (optional)
-- Cloudinary account (optional, for profile pictures)
-
 ## Installation
 
-1. **Clone the repository**
-   ```bash
-   git clone <your-repo-url>
-   cd Auth_API
-   ```
-
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
-
-3. **Set up PostgreSQL database**
-   ```sql
-   CREATE DATABASE auth_api_db;
-   ```
-
-4. **Configure environment variables**
-   
-   Copy `.env.example` to `.env`:
-   ```bash
-   cp .env.example .env
-   ```
-   
-   Update the `.env` file with your credentials.
-
-5. **Run database migrations**
-   ```bash
-   npm run migrate
-   ```
-
-6. **Start the server**
-   ```bash
-   # Development mode
-   npm run dev
-   
-   # Production mode
-   npm start
-   ```
-
-## Environment Variables
-
-Key variables to configure in `.env`:
-
-- `API_URL` - Your hosted domain (e.g., https://api.yourdomain.com)
-- `PORT` - Server port (default: 3000)
-- `JWT_SECRET` - Secret key for JWT tokens (min 32 characters)
-- `DB_*` - PostgreSQL database credentials
-- `EMAIL_USER` & `EMAIL_PASSWORD` - Gmail credentials
-- `GOOGLE_CLIENT_ID` & `GOOGLE_CLIENT_SECRET` - Google OAuth
-- `GITHUB_CLIENT_ID` & `GITHUB_CLIENT_SECRET` - GitHub OAuth
+1. Clone the repository
+2. Install dependencies with `npm install`
+3. Set up PostgreSQL database
+4. Configure environment variables (see `.env.example`)
+5. Run migrations with `npm run migrate`
+6. Start the server with `npm run dev`
 
 ## API Endpoints
 
@@ -166,17 +113,11 @@ curl -X GET http://localhost:3000/api/auth/me \
 - ✅ JWT access and refresh tokens
 - ✅ Email verification
 - ✅ Password reset with expiring tokens
-- ✅ Input validation and sanitization
-- ✅ Flexible CORS configuration
-- ✅ Account status checks (banned, inactive)
+- ✅Security Features
 
-## Deployment
-
-**Important:** When deploying, update `.env`:
-- Set `API_URL` to your hosted domain (e.g., https://your-api.herokuapp.com)
-- Set `NODE_ENV=production`
-- Update OAuth callback URLs in provider settings
-
-## License
-
-ISC
+- ✅ Password hashing
+- ✅ JWT authentication
+- ✅ Email verification
+- ✅ Password reset functionality
+- ✅ Input validation
+- ✅ CORS configuration
