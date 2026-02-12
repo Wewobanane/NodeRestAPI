@@ -3,7 +3,7 @@ const cors = require('cors');
 const session = require('express-session');
 const passport = require('./config/passport');
 require('dotenv').config();
-
+const createTables = require('./database/migrate');
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 
@@ -85,12 +85,26 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Start server
+// Start server with migrations
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-});
+
+const startServer = async () => {
+  try {
+    // Run database migrations
+    await createTables();
+    
+    // Start the server
+    app.listen(PORT, () => {
+      console.log(`Server is running on port ${PORT}`);
+      console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    });
+  } catch (error) {
+    console.error('Failed to start server:', error);
+    process.exit(1);
+  }
+};
+
+startServer();
 
 module.exports = app;
 

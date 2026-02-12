@@ -46,11 +46,10 @@ const createTables = async () => {
     console.log('Email verifications table created successfully');
 
     console.log('Migration completed successfully!');
-    process.exit(0);
   } catch (error) {
     console.error('Migration error:', error);
-    process.exit(1);
+    throw error;
   }
 };
 
-createTables();
+module.exports = createTables;
