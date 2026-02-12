@@ -2,31 +2,19 @@ const nodemailer = require('nodemailer');
 
 class EmailService {
   constructor() {
-    this.isConfigured = !!(process.env.EMAIL_USER && process.env.EMAIL_PASSWORD);
+    this.transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASSWORD
+      }
+    });
     
-    if (this.isConfigured) {
-      this.transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-          user: process.env.EMAIL_USER,
-          pass: process.env.EMAIL_PASSWORD
-        },
-        connectionTimeout: 5000,
-        greetingTimeout: 5000
-      });
-    } else {
-      console.warn('⚠️ Email service not configured. Email features will be disabled.');
-    }
+    
   }
 
   async sendVerificationEmail(email, token) {
-    if (!this.isConfigured) {
-      console.log('Email sending skipped (not configured)');
-      return { success: false, message: 'Email service not configured' };
-    }
-
-    try {
-      const verificationUrl = `${process.env.API_URL}/api/auth/verify-email?token=${token}`;
+    const verificationUrl = `${process.env.API_URL}/api/auth/verify-email?token=${token}`;
 
     const mailOptions = {
         from: `"MyApp Authentication" <${process.env.EMAIL_USER}>`,
@@ -48,24 +36,13 @@ class EmailService {
           <p style="color: #999; font-size: 12px;">This link will expire in 24 hours.</p>
         </div>
       `
-      };
+    };
 
-      await this.transporter.sendMail(mailOptions);
-      return { success: true };
-    } catch (error) {
-      console.error('Failed to send verification email:', error.message);
-      return { success: false, message: error.message };
-    }
+    await this.transporter.sendMail(mailOptions);
   }
 
   async sendPasswordResetEmail(email, token) {
-    if (!this.isConfigured) {
-      console.log('Email sending skipped (not configured)');
-      return { success: false, message: 'Email service not configured' };
-    }
-
-    try {
-      const resetUrl = `${process.env.API_URL}/api/auth/reset-password?token=${token}`;
+    const resetUrl = `${process.env.API_URL}/api/auth/reset-password?token=${token}`;
 
     const mailOptions = {
         from: `"MyApp Authentication" <${process.env.EMAIL_USER}>`,
@@ -88,22 +65,12 @@ class EmailService {
           <p style="color: #999; font-size: 12px;">If you didn't request this, please ignore this email.</p>
         </div>
       `
-      };
+    };
 
-      await this.transporter.sendMail(mailOptions);
-      return { success: true };
-    } catch (error) {
-      console.error('Failed to send password reset email:', error.message);
-      return { success: false, message: error.message };
-    }
+    await this.transporter.sendMail(mailOptions);
   }
 
   async sendWelcomeEmail(email) {
-    if (!this.isConfigured) {
-      return { success: false, message: 'Email service not configured' };
-    }
-
-    try {
     const mailOptions = {
         from: `"MyApp Authentication" <${process.env.EMAIL_USER}>`,
       to: email,
@@ -115,14 +82,9 @@ class EmailService {
           <p>If you have any questions, feel free to reach out to our support team.</p>
         </div>
       `
-      };
+    };
 
-      await this.transporter.sendMail(mailOptions);
-      return { success: true };
-    } catch (error) {
-      console.error('Failed to send welcome email:', error.message);
-      return { success: false, message: error.message };
-    }
+    await this.transporter.sendMail(mailOptions);
   }
 }
 
