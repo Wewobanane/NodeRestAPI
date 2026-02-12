@@ -1,14 +1,24 @@
 const nodemailer = require('nodemailer');
-
 class EmailService {
   constructor() {
     // Support multiple email providers for production
-    const emailProvider = process.env.EMAIL_PROVIDER || 'smtp';
+    const emailProvider = process.env.EMAIL_PROVIDER || 'sendgrid';
     
     let transportConfig;
     
-    if (emailProvider === 'gmail') {
-      // Gmail configuration (not recommended for production)
+    if (emailProvider === 'sendgrid') {
+      // SendGrid configuration (recommended for production)
+      transportConfig = {
+        host: 'smtp.sendgrid.net',
+        port: 587,
+        secure: false,
+        auth: {
+          user: 'apikey', // This is always 'apikey' for SendGrid
+          pass: process.env.SENDGRID_API_KEY
+        }
+      };
+    } else if (emailProvider === 'gmail') {
+      // Gmail configuration with App Password
       transportConfig = {
         service: 'gmail',
         auth: {
@@ -17,12 +27,12 @@ class EmailService {
         }
       };
     } else {
-      // Generic SMTP configuration (recommended for production)
-      // Works with SendGrid, Mailgun, AWS SES, etc.
+      
+      
       transportConfig = {
-        host: process.env.SMTP_HOST || 'smtp.gmail.com',
+        host: process.env.SMTP_HOST || 'smtp.sendgrid.net',
         port: parseInt(process.env.SMTP_PORT) || 587,
-        secure: process.env.SMTP_SECURE === 'true', // true for 465, false for other ports
+        secure: process.env.SMTP_SECURE === 'true',
         auth: {
           user: process.env.SMTP_USER || process.env.EMAIL_USER,
           pass: process.env.SMTP_PASSWORD || process.env.EMAIL_PASSWORD
@@ -53,7 +63,7 @@ class EmailService {
     const verificationUrl = `${process.env.API_URL}/api/auth/verify-email?token=${token}`;
 
     const mailOptions = {
-      from: `"MyApp Authentication" <${process.env.SMTP_USER || process.env.EMAIL_USER}>`,
+      from: `"MyApp Authentication" <${process.env.SENDGRID_FROM_EMAIL || process.env.EMAIL_USER}>`,
       to: email,
       subject: 'Email Verification',
       html: `
@@ -88,7 +98,7 @@ class EmailService {
     const resetUrl = `${process.env.API_URL}/api/auth/reset-password?token=${token}`;
 
     const mailOptions = {
-      from: `"MyApp Authentication" <${process.env.SMTP_USER || process.env.EMAIL_USER}>`,
+      from: `"MyApp Authentication" <${process.env.SENDGRID_FROM_EMAIL || process.env.EMAIL_USER}>`,
       to: email,
       subject: 'Password Reset Request',
       html: `
@@ -122,7 +132,7 @@ class EmailService {
 
   async sendWelcomeEmail(email) {
     const mailOptions = {
-      from: `"MyApp Authentication" <${process.env.SMTP_USER || process.env.EMAIL_USER}>`,
+      from: `"MyApp Authentication" <${process.env.SENDGRID_FROM_EMAIL || process.env.EMAIL_USER}>`,
       to: email,
       subject: 'Welcome!',
       html: `
@@ -142,6 +152,25 @@ class EmailService {
       console.error('Failed to send welcome email:', error.message);
       // Don't throw error for welcome email - it's not critical
       return null;
+    }
+  }
+
+  async sendCustomEmail({ to, subject, html, text, replyTo }) {
+    const mailOptions = {
+      from: `"MyApp Authentication" <${process.env.SENDGRID_FROM_EMAIL || process.env.EMAIL_USER}>`,
+      to,
+      subject,
+      html,
+      text: text || '',
+    };
+
+    try {
+      const info = await this.transporter.sendMail(mailOptions);
+      console.log('Custom email sent:', info.messageId);
+      return info;
+    } catch (error) {
+      console.error('Failed to send custom email:', error.message);
+      throw new Error('Failed to send email. Please try again later.');
     }
   }
 }
