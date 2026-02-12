@@ -35,8 +35,11 @@ class AuthController {
       const expiresAt = getTokenExpiry(24);
       await userRepository.createEmailVerification(user.id, verificationToken, expiresAt);
 
-      // Send verification email
-      await emailService.sendVerificationEmail(email, verificationToken);
+      // Try to send verification email (non-blocking)
+      const emailResult = await emailService.sendVerificationEmail(email, verificationToken);
+      const emailMessage = emailResult.success 
+        ? 'Please check your email for verification.'
+        : 'Email verification will be available soon.';
 
       // Generate JWT tokens
       const token = generateToken({ userId: user.id });
@@ -47,7 +50,7 @@ class AuthController {
 
       res.status(201).json({
         success: true,
-        message: 'User created successfully. Please check your email for verification.',
+        message: `User created successfully. ${emailMessage}`,
         data: {
           user,
           token,
@@ -202,8 +205,10 @@ class AuthController {
       const expiresAt = getTokenExpiry(1); // 1 hour
       await userRepository.createPasswordReset(user.id, resetToken, expiresAt);
 
-      // Send reset email
-      await emailService.sendPasswordResetEmail(email, user.name, resetToken);
+      // Try to send reset email (non-blocking)
+      emailService.sendPasswordResetEmail(email, resetToken).catch(err => 
+        console.error('Email send failed:', err.message)
+      );
 
       res.status(200).json({
         success: true,
@@ -325,8 +330,10 @@ class AuthController {
       const expiresAt = getTokenExpiry(24);
       await userRepository.createEmailVerification(user.id, verificationToken, expiresAt);
 
-      // Send verification email
-      await emailService.sendVerificationEmail(email, user.name, verificationToken);
+      // Try to send verification email (non-blocking)
+      emailService.sendVerificationEmail(email, verificationToken).catch(err => 
+        console.error('Email send failed:', err.message)
+      );
 
       res.status(200).json({
         success: true,
