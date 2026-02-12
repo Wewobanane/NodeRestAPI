@@ -2,22 +2,58 @@ const nodemailer = require('nodemailer');
 
 class EmailService {
   constructor() {
-    this.transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASSWORD
-      }
-    });
+    // Support multiple email providers for production
+    const emailProvider = process.env.EMAIL_PROVIDER || 'smtp';
     
+    let transportConfig;
     
+    if (emailProvider === 'gmail') {
+      // Gmail configuration (not recommended for production)
+      transportConfig = {
+        service: 'gmail',
+        auth: {
+          user: process.env.EMAIL_USER,
+          pass: process.env.EMAIL_PASSWORD
+        }
+      };
+    } else {
+      // Generic SMTP configuration (recommended for production)
+      // Works with SendGrid, Mailgun, AWS SES, etc.
+      transportConfig = {
+        host: process.env.SMTP_HOST || 'smtp.gmail.com',
+        port: parseInt(process.env.SMTP_PORT) || 587,
+        secure: process.env.SMTP_SECURE === 'true', // true for 465, false for other ports
+        auth: {
+          user: process.env.SMTP_USER || process.env.EMAIL_USER,
+          pass: process.env.SMTP_PASSWORD || process.env.EMAIL_PASSWORD
+        },
+        tls: {
+          rejectUnauthorized: process.env.NODE_ENV === 'production'
+        }
+      };
+    }
+    
+    this.transporter = nodemailer.createTransport(transportConfig);
+    
+    // Verify connection on startup
+    this.verifyConnection();
+  }
+  
+  async verifyConnection() {
+    try {
+      await this.transporter.verify();
+      console.log('✓ Email service is ready');
+    } catch (error) {
+      console.error('✗ Email service connection failed:', error.message);
+      console.error('Please check your email configuration (SMTP settings)');
+    }
   }
 
   async sendVerificationEmail(email, token) {
     const verificationUrl = `${process.env.API_URL}/api/auth/verify-email?token=${token}`;
 
     const mailOptions = {
-        from: `"MyApp Authentication" <${process.env.EMAIL_USER}>`,
+      from: `"MyApp Authentication" <${process.env.SMTP_USER || process.env.EMAIL_USER}>`,
       to: email,
       subject: 'Email Verification',
       html: `
@@ -38,14 +74,21 @@ class EmailService {
       `
     };
 
-    await this.transporter.sendMail(mailOptions);
+    try {
+      const info = await this.transporter.sendMail(mailOptions);
+      console.log('Verification email sent:', info.messageId);
+      return info;
+    } catch (error) {
+      console.error('Failed to send verification email:', error.message);
+      throw new Error('Failed to send verification email. Please try again later.');
+    }
   }
 
   async sendPasswordResetEmail(email, token) {
     const resetUrl = `${process.env.API_URL}/api/auth/reset-password?token=${token}`;
 
     const mailOptions = {
-        from: `"MyApp Authentication" <${process.env.EMAIL_USER}>`,
+      from: `"MyApp Authentication" <${process.env.SMTP_USER || process.env.EMAIL_USER}>`,
       to: email,
       subject: 'Password Reset Request',
       html: `
@@ -67,12 +110,19 @@ class EmailService {
       `
     };
 
-    await this.transporter.sendMail(mailOptions);
+    try {
+      const info = await this.transporter.sendMail(mailOptions);
+      console.log('Password reset email sent:', info.messageId);
+      return info;
+    } catch (error) {
+      console.error('Failed to send password reset email:', error.message);
+      throw new Error('Failed to send password reset email. Please try again later.');
+    }
   }
 
   async sendWelcomeEmail(email) {
     const mailOptions = {
-        from: `"MyApp Authentication" <${process.env.EMAIL_USER}>`,
+      from: `"MyApp Authentication" <${process.env.SMTP_USER || process.env.EMAIL_USER}>`,
       to: email,
       subject: 'Welcome!',
       html: `
@@ -84,7 +134,15 @@ class EmailService {
       `
     };
 
-    await this.transporter.sendMail(mailOptions);
+    try {
+      const info = await this.transporter.sendMail(mailOptions);
+      console.log('Welcome email sent:', info.messageId);
+      return info;
+    } catch (error) {
+      console.error('Failed to send welcome email:', error.message);
+      // Don't throw error for welcome email - it's not critical
+      return null;
+    }
   }
 }
 
