@@ -1,39 +1,32 @@
-const nodemailer = require('nodemailer');
+const sgMail = require('@sendgrid/mail');
+
 class EmailService {
   constructor() {
-    // SendGrid configuration
-    const transportConfig = {
-      host: 'smtp.sendgrid.net',
-      port: 587,
-      secure: false,
-      auth: {
-        user: 'apikey', // This is always 'apikey' for SendGrid
-        pass: process.env.SENDGRID_API_KEY
-      }
-    };
+    // SendGrid HTTP API configuration (more reliable than SMTP)
+    const apiKey = process.env.SENDGRID_API_KEY;
     
-    this.transporter = nodemailer.createTransport(transportConfig);
-    
-    // Verify connection on startup
-    this.verifyConnection();
-  }
-  
-  async verifyConnection() {
-    try {
-      await this.transporter.verify();
-      console.log('✓ Email service is ready');
-    } catch (error) {
-      console.error('✗ Email service connection failed:', error.message);
-      console.error('Please check your email configuration (SMTP settings)');
+    if (!apiKey) {
+      console.error('✗ SENDGRID_API_KEY not configured');
+      return;
     }
+    
+    sgMail.setApiKey(apiKey);
+    this.fromEmail = process.env.SENDGRID_FROM_EMAIL;
+    
+    if (!this.fromEmail) {
+      console.error('✗ SENDGRID_FROM_EMAIL not configured');
+      return;
+    }
+    
+    console.log('✓ SendGrid email service initialized');
   }
 
   async sendVerificationEmail(email, token) {
     const verificationUrl = `${process.env.API_URL}/api/auth/verify-email?token=${token}`;
 
-    const mailOptions = {
-      from: `"MyApp Authentication" <${process.env.SENDGRID_FROM_EMAIL}>`,
+    const msg = {
       to: email,
+      from: `MyApp Authentication <${this.fromEmail}>`,
       subject: 'Email Verification',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -54,11 +47,14 @@ class EmailService {
     };
 
     try {
-      const info = await this.transporter.sendMail(mailOptions);
-      console.log('Verification email sent:', info.messageId);
-      return info;
+      await sgMail.send(msg);
+      console.log('Verification email sent to:', email);
+      return { success: true };
     } catch (error) {
       console.error('Failed to send verification email:', error.message);
+      if (error.response) {
+        console.error('SendGrid error:', error.response.body);
+      }
       throw new Error('Failed to send verification email. Please try again later.');
     }
   }
@@ -66,9 +62,9 @@ class EmailService {
   async sendPasswordResetEmail(email, token) {
     const resetUrl = `${process.env.API_URL}/api/auth/reset-password?token=${token}`;
 
-    const mailOptions = {
-      from: `"MyApp Authentication" <${process.env.SENDGRID_FROM_EMAIL}>`,
+    const msg = {
       to: email,
+      from: `MyApp Authentication <${this.fromEmail}>`,
       subject: 'Password Reset Request',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -90,19 +86,22 @@ class EmailService {
     };
 
     try {
-      const info = await this.transporter.sendMail(mailOptions);
-      console.log('Password reset email sent:', info.messageId);
-      return info;
+      await sgMail.send(msg);
+      console.log('Password reset email sent to:', email);
+      return { success: true };
     } catch (error) {
       console.error('Failed to send password reset email:', error.message);
+      if (error.response) {
+        console.error('SendGrid error:', error.response.body);
+      }
       throw new Error('Failed to send password reset email. Please try again later.');
     }
   }
 
   async sendWelcomeEmail(email) {
-    const mailOptions = {
-      from: `"MyApp Authentication" <${process.env.SENDGRID_FROM_EMAIL}>`,
+    const msg = {
       to: email,
+      from: `MyApp Authentication <${this.fromEmail}>`,
       subject: 'Welcome!',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -114,9 +113,9 @@ class EmailService {
     };
 
     try {
-      const info = await this.transporter.sendMail(mailOptions);
-      console.log('Welcome email sent:', info.messageId);
-      return info;
+      await sgMail.send(msg);
+      console.log('Welcome email sent to:', email);
+      return { success: true };
     } catch (error) {
       console.error('Failed to send welcome email:', error.message);
       // Don't throw error for welcome email - it's not critical
@@ -125,20 +124,27 @@ class EmailService {
   }
 
   async sendCustomEmail({ to, subject, html, text, replyTo }) {
-    const mailOptions = {
-      from: `"MyApp Authentication" <${process.env.SENDGRID_FROM_EMAIL}>`,
+    const msg = {
       to,
+      from: `MyApp Authentication <${this.fromEmail}>`,
       subject,
       html,
       text: text || '',
     };
 
+    if (replyTo) {
+      msg.replyTo = replyTo;
+    }
+
     try {
-      const info = await this.transporter.sendMail(mailOptions);
-      console.log('Custom email sent:', info.messageId);
-      return info;
+      await sgMail.send(msg);
+      console.log('Custom email sent to:', to);
+      return { success: true };
     } catch (error) {
       console.error('Failed to send custom email:', error.message);
+      if (error.response) {
+        console.error('SendGrid error:', error.response.body);
+      }
       throw new Error('Failed to send email. Please try again later.');
     }
   }
