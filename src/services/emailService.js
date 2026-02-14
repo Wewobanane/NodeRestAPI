@@ -1,47 +1,16 @@
 const nodemailer = require('nodemailer');
 class EmailService {
   constructor() {
-    // Support multiple email providers for production
-    const emailProvider = process.env.EMAIL_PROVIDER || 'sendgrid';
-    
-    let transportConfig;
-    
-    if (emailProvider === 'sendgrid') {
-      // SendGrid configuration (recommended for production)
-      transportConfig = {
-        host: 'smtp.sendgrid.net',
-        port: 587,
-        secure: false,
-        auth: {
-          user: 'apikey', // This is always 'apikey' for SendGrid
-          pass: process.env.SENDGRID_API_KEY
-        }
-      };
-    } else if (emailProvider === 'gmail') {
-      // Gmail configuration with App Password
-      transportConfig = {
-        service: 'gmail',
-        auth: {
-          user: process.env.EMAIL_USER,
-          pass: process.env.EMAIL_PASSWORD
-        }
-      };
-    } else {
-      
-      
-      transportConfig = {
-        host: process.env.SMTP_HOST || 'smtp.sendgrid.net',
-        port: parseInt(process.env.SMTP_PORT) || 587,
-        secure: process.env.SMTP_SECURE === 'true',
-        auth: {
-          user: process.env.SMTP_USER || process.env.EMAIL_USER,
-          pass: process.env.SMTP_PASSWORD || process.env.EMAIL_PASSWORD
-        },
-        tls: {
-          rejectUnauthorized: process.env.NODE_ENV === 'production'
-        }
-      };
-    }
+    // SendGrid configuration
+    const transportConfig = {
+      host: 'smtp.sendgrid.net',
+      port: 587,
+      secure: false,
+      auth: {
+        user: 'apikey', // This is always 'apikey' for SendGrid
+        pass: process.env.SENDGRID_API_KEY
+      }
+    };
     
     this.transporter = nodemailer.createTransport(transportConfig);
     
@@ -63,7 +32,7 @@ class EmailService {
     const verificationUrl = `${process.env.API_URL}/api/auth/verify-email?token=${token}`;
 
     const mailOptions = {
-      from: `"MyApp Authentication" <${process.env.SENDGRID_FROM_EMAIL || process.env.EMAIL_USER}>`,
+      from: `"MyApp Authentication" <${process.env.SENDGRID_FROM_EMAIL}>`,
       to: email,
       subject: 'Email Verification',
       html: `
@@ -98,7 +67,7 @@ class EmailService {
     const resetUrl = `${process.env.API_URL}/api/auth/reset-password?token=${token}`;
 
     const mailOptions = {
-      from: `"MyApp Authentication" <${process.env.SENDGRID_FROM_EMAIL || process.env.EMAIL_USER}>`,
+      from: `"MyApp Authentication" <${process.env.SENDGRID_FROM_EMAIL}>`,
       to: email,
       subject: 'Password Reset Request',
       html: `
@@ -132,7 +101,7 @@ class EmailService {
 
   async sendWelcomeEmail(email) {
     const mailOptions = {
-      from: `"MyApp Authentication" <${process.env.SENDGRID_FROM_EMAIL || process.env.EMAIL_USER}>`,
+      from: `"MyApp Authentication" <${process.env.SENDGRID_FROM_EMAIL}>`,
       to: email,
       subject: 'Welcome!',
       html: `
@@ -157,7 +126,7 @@ class EmailService {
 
   async sendCustomEmail({ to, subject, html, text, replyTo }) {
     const mailOptions = {
-      from: `"MyApp Authentication" <${process.env.SENDGRID_FROM_EMAIL || process.env.EMAIL_USER}>`,
+      from: `"MyApp Authentication" <${process.env.SENDGRID_FROM_EMAIL}>`,
       to,
       subject,
       html,
