@@ -3,21 +3,6 @@ const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const GitHubStrategy = require('passport-github2').Strategy;
 const userRepository = require('../repositories/userRepository');
 
-// Serialize user
-passport.serializeUser((user, done) => {
-  done(null, user.id);
-});
-
-// Deserialize user
-passport.deserializeUser(async (id, done) => {
-  try {
-    const user = await userRepository.findById(id);
-    done(null, user);
-  } catch (error) {
-    done(error, null);
-  }
-});
-
 // Google Strategy
 passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,

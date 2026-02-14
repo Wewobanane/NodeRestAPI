@@ -51,12 +51,9 @@ router.get('/github/callback',
 
 // OAuth failure route
 router.get('/failure', (req, res) => {
-  console.log('OAuth Failure - Session messages:', req.session);
-  const message = req.session?.messages?.[0] || 'OAuth authentication failed';
-  
   res.status(401).json({
     success: false,
-    message: message,
+    message: 'OAuth authentication failed',
     error: 'OAuth authentication failed'
   });
 });
